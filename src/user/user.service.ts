@@ -1,13 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UserService {
   constructor(private prismaService: PrismaService) {}
 
-  create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto) {
+    const { email } = createUserDto;
+    const userAlreadyExists = await this.prismaService.user.findUnique({
+      where: {
+        email,
+      },
+    });
+    if (userAlreadyExists) {
+      throw new ConflictException('Email Already exists');
+    }
     return this.prismaService.user.create({
       data: createUserDto,
     });
@@ -25,16 +38,27 @@ export class UserService {
     });
   }
 
-  update(id: string, updateUserDto: UpdateUserDto) {
-    return this.prismaService.user.update({
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    return await this.prismaService.user.update({
       where: {
         id,
       },
       data: updateUserDto,
+      omit: {
+        id: true,
+      },
     });
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    const userExists = await this.prismaService.user.findUnique({
+      where: {
+        id,
+      },
+    });
+    if (!userExists) {
+      throw new BadRequestException('User does not exists');
+    }
     return this.prismaService.user.delete({
       where: {
         id,
