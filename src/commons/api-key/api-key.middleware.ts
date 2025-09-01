@@ -1,12 +1,15 @@
 import {
+  BadRequestException,
   Injectable,
   NestMiddleware,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NextFunction, Request, Response } from 'express';
 
 @Injectable()
 export class ApiKeyMiddleware implements NestMiddleware {
+  constructor(private readonly configService: ConfigService) {}
   use(req: Request, res: Response, next: NextFunction) {
     const hasAuthApiKey = this.extractHeader(req);
     if (hasAuthApiKey) {
@@ -16,13 +19,16 @@ export class ApiKeyMiddleware implements NestMiddleware {
     }
   }
 
-  extractHeader(resquest: Request): boolean {
-    // recebe a request
-    // faz a extração do cabeçalho x-auth-api-key
-    const header = resquest.headers['x-auth-api-key'];
-    // verifica se está certo(em relação a nossa api key verdadeira)
-    console.log(header);
-    // retorna true ou false
+  extractHeader(req: Request): boolean {
+    const token = req.headers['x-auth-api-key'];
+
+    if (
+      Array.isArray(token) ||
+      token != this.configService.get('API_AUTH_KEY')
+    ) {
+      throw new BadRequestException('Token incorrect or bad format');
+    }
+
     return true;
   }
 }

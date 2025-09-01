@@ -43,6 +43,7 @@ services:
       - app-network
     ports:
       - '3000:3000'
+      - '5555:5555'
     depends_on:
       - postgres
       - adminer
@@ -53,7 +54,7 @@ services:
 
 networks:
   app-network:
-    driver: bridge
+    driver: bridge  
 
 volumes:
   postgres_volume_data: {}
