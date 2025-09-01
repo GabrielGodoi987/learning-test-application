@@ -10,6 +10,7 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Request } from 'express';
 
 @Controller('user')
 export class UserController {
@@ -38,5 +39,16 @@ export class UserController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
+  }
+
+  @Post('test')
+  test(req: Request) {
+    // recebe a request
+    // faz a extração do cabeçalho x-auth-api-key
+    const header = req.headers['x-auth-api-key'];
+    // verifica se está certo(em relação a nossa api key verdadeira)
+    console.log(header);
+    // retorna true ou false
+    return true;
   }
 }

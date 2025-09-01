@@ -11,7 +11,7 @@ const mockPrismaService = {
     findOne: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
-    remove: jest.fn(),
+    delete: jest.fn(),
     update: jest.fn(),
   },
 };
@@ -53,10 +53,6 @@ describe('UserService', () => {
         password: 'hashed_password_3',
       },
     ];
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
   });
 
   describe('findAll', () => {
@@ -143,46 +139,38 @@ describe('UserService', () => {
   });
 
   describe('remove', () => {
+    it('should throw BadRequestException if user does not exist', async () => {
+      const notExistentId = 'abcd';
+      const rejectMessage = 'User does not exists';
+
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.remove(notExistentId)).rejects.toThrow(
+        new BadRequestException(rejectMessage),
+      );
+
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { id: notExistentId },
+      });
+
+      expect(mockPrismaService.user.delete).not.toHaveBeenCalled();
+    });
+
     it('should delete a user', async () => {
       const id = 'a1f3c9c2-9b62-4a55-8f12-8d82d02c3d01';
-      const deletedUser = {
+      const user = {
         id: 'a1f3c9c2-9b62-4a55-8f12-8d82d02c3d01',
         name: 'Gabriel Godoi',
         email: 'gabriel.godoi@example.com',
         password: 'hashed_password_1',
       };
+      mockPrismaService.user.findUnique.mockResolvedValue(user);
 
-      // encontramos o usuário que desejamos delear
-      mockPrismaService.user.findUnique.mockResolvedValue(deletedUser);
+      mockPrismaService.user.delete.mockResolvedValue(user);
 
-      mockPrismaService.user.remove.mockResolvedValue(deletedUser);
+      const deleteUser = await service.remove(id);
 
-      const result = await service.remove(id);
-
-      expect(result).toEqual(deletedUser);
-
-      expect(mockPrismaService.user.findUnique).toHaveBeenCalledTimes(1);
-      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
-        where: { id },
-      });
-      expect(mockPrismaService.user.remove).toHaveBeenCalledTimes(1);
-      expect(mockPrismaService.user.remove).toHaveBeenCalledWith({
-        where: { id },
-      });
-    });
-
-    it('should throw BadRequestException if user does not exist', async () => {
-      const id = 'not-exists-id';
-      const rejectMessage = 'User does not exists';
-
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
-
-      const result = await service.remove(id);
-
-      await expect(result).rejects.toThrow(
-        new BadRequestException(rejectMessage),
-      );
-      expect(mockPrismaService.user.remove).toHaveBeenCalledTimes(0);
+      expect(deleteUser).toEqual(user);
     });
   });
 });

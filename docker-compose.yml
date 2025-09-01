@@ -1,14 +1,23 @@
+name: development-test
+
 services:
   postgres:
     image: postgres:15
     environment:
       POSTGRES_PASSWORD: password
-      POSTGRES_USERNAME: postgres
+      POSTGRES_USER: postgres
       POSTGRES_DB: app
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
     ports:
-     - "5432:5432"
+      - '5432:5432'
     networks:
-      - app
+      - app-network
+    volumes:
+      - postgres_volume_data:/var/lib/postgresql/data
 
   adminer:
     image: adminer
@@ -16,27 +25,35 @@ services:
     depends_on:
       - postgres
     ports:
-      - "8080:8080"
+      - '8080:8080'
     networks:
-      - app
+      - app-network
   api:
     build:
       context: .
       dockerfile: Dockerfile
       target: dev
-    working_dir: /app
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: root
+      DB_PASSWORD: password
+      DB_NAME: app
     networks:
-      - app
+      - app-network
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       - postgres
       - adminer
     command: [sh, -c, 'npm run start:dev']
     volumes:
-      - .:/app:delegated
+      - .:/app:delegate
       - /app/node_modules
 
-
 networks:
-  app:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_volume_data: {}
